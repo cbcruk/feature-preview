@@ -1,23 +1,33 @@
 {
   "name": "feature-preview",
   "version": "0.0.0",
-  "description": "A starter for creating a TypeScript package.",
-  "homepage": "https://github.com/author/library#readme",
+  "description": "localStorage-backed feature preview for web clients — see finished-but-unreleased work in any deployed environment, no redeploy. Zero dependencies.",
+  "keywords": [
+    "feature-flags",
+    "feature-preview",
+    "localStorage",
+    "typescript",
+    "zero-dependency"
+  ],
+  "homepage": "https://github.com/cbcruk/feature-preview#readme",
   "bugs": {
-    "url": "https://github.com/author/library/issues"
+    "url": "https://github.com/cbcruk/feature-preview/issues"
   },
   "license": "MIT",
-  "author": "Author Name <author.name@mail.com>",
+  "author": "Eunsoo Lee <cbcruk@gmail.com>",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/author/library.git"
+    "url": "git+https://github.com/cbcruk/feature-preview.git"
   },
   "files": [
     "dist"
   ],
   "type": "module",
   "exports": {
-    ".": "./dist/index.mjs",
+    ".": {
+      "types": "./dist/index.d.mts",
+      "default": "./dist/index.mjs"
+    },
     "./package.json": "./package.json"
   },
   "publishConfig": {
