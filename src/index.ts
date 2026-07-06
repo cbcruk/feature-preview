@@ -1,3 +1,10 @@
+/**
+ * feature-preview — core entry (`feature-preview`).
+ *
+ * Framework-agnostic engine. Pair it with a subpath:
+ *   - `feature-preview/react`  → Provider + reactive hooks
+ *   - `feature-preview/panel`  → a runtime debug panel for any framework
+ */
 export {
   createFeaturePreview,
   type FeaturePreview,
@@ -6,6 +13,4 @@ export {
   type FeatureMap,
   type PreviewSnapshot,
   type Stage,
-} from './feature-preview.ts'
-
-export { FEATURES, preview } from './features.ts'
+} from './core/feature-preview.ts'

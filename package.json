@@ -23,10 +23,19 @@
     "dist"
   ],
   "type": "module",
+  "sideEffects": false,
   "exports": {
     ".": {
       "types": "./dist/index.d.mts",
       "default": "./dist/index.mjs"
+    },
+    "./react": {
+      "types": "./dist/react.d.mts",
+      "default": "./dist/react.mjs"
+    },
+    "./panel": {
+      "types": "./dist/panel.d.mts",
+      "default": "./dist/panel.mjs"
     },
     "./package.json": "./package.json"
   },
@@ -42,11 +51,25 @@
     "prepare": "vp config"
   },
   "devDependencies": {
+    "@testing-library/react": "^16.3.2",
     "@types/node": "^25.6.2",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
     "@typescript/native-preview": "7.0.0-dev.20260509.2",
     "bumpp": "^11.1.0",
+    "happy-dom": "^20.10.6",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
     "typescript": "^6.0.3",
     "vite-plus": "^0.1.20"
+  },
+  "peerDependencies": {
+    "react": ">=18.0.0"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    }
   },
   "packageManager": "pnpm@11.10.0"
 }

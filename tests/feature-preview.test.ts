@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test } from 'vite-plus/test'
-import { createFeaturePreview, type FeatureMap } from '../src/feature-preview.ts'
+import { createFeaturePreview, type FeatureMap } from '../src/core/feature-preview.ts'
 
 const FEATURES = {
   fromStaging: { minStage: 'staging' },
