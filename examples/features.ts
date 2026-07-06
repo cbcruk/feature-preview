@@ -1,7 +1,9 @@
-import { createFeaturePreview, type FeatureMap, type Stage } from './feature-preview.ts'
-
 /**
- * THE feature record — single source of truth.
+ * EXAMPLE — the per-app feature record + shared instance (single source of truth).
+ *
+ * This is NOT part of the published SDK. Copy it into your app and edit the
+ * rows. Import from the package (`feature-preview`) rather than the relative
+ * `../src` path shown here.
  *
  * One row per previewable feature. Keys are human-readable identifiers (used at
  * call sites, so make them self-describing). Jira lives in a FIELD, not the
@@ -10,10 +12,9 @@ import { createFeaturePreview, type FeatureMap, type Stage } from './feature-pre
  *
  * `as const` gives literal key types so `preview.isPreviewable('typo')` is a
  * compile error; `satisfies FeatureMap` checks each row's shape without widening.
- *
- * Lifecycle in this frame: minStage/default control when a feature ENTERS the
- * preview set; `default: true` means it has GRADUATED to GA (cleanup target).
  */
+import { createFeaturePreview, type FeatureMap, type Stage } from '../src/index.ts'
+
 export const FEATURES = {
   newCheckoutFlow: {
     minStage: 'staging', // previewable in staging + prod-preview; hidden from prod users until GA

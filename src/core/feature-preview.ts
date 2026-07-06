@@ -63,10 +63,37 @@ export interface PreviewSnapshot<K extends string> {
   def: FeatureDef
 }
 
+/**
+ * The object returned by {@link createFeaturePreview}. Declared as an interface
+ * (method syntax) so a concrete `FeaturePreview<typeof FEATURES>` is accepted
+ * wherever a `FeaturePreview<FeatureMap>` is expected — e.g. the React provider
+ * and the debug panel, which are key-agnostic.
+ */
+export interface FeaturePreview<T extends FeatureMap> {
+  /** The build stage this instance was created with. */
+  readonly stage: Stage
+  /** Is this feature visible to the current viewer? Override wins, else stage default. */
+  isPreviewable(key: keyof T & string): boolean
+  /** Force a feature shown/hidden for THIS browser only. No-op if previews disallowed. */
+  setPreview(key: keyof T & string, visible: boolean): void
+  /** Drop a single override → the feature falls back to its stage default. */
+  clearPreview(key: keyof T & string): void
+  /** Drop every override. */
+  clearAllPreviews(): void
+  /** Parse `?preview=…` overrides from a URL, persist them, and return touched keys. */
+  syncFromUrl(search?: string): (keyof T & string)[]
+  /** Memoized snapshot for a debug panel / logging: visibility + source + metadata. */
+  list(): PreviewSnapshot<keyof T & string>[]
+  /** Subscribe to preview changes; returns an unsubscribe function. */
+  subscribe(listener: () => void): () => void
+  /** Recompute + notify without a local mutation (e.g. after a cross-tab change). */
+  refresh(): void
+}
+
 export function createFeaturePreview<T extends FeatureMap>(
   features: T,
   options: FeaturePreviewOptions,
-) {
+): FeaturePreview<T> {
   type Key = keyof T & string
 
   const {
@@ -77,6 +104,16 @@ export function createFeaturePreview<T extends FeatureMap>(
   } = options
 
   const previewAllowed = stage !== 'production' || allowPreviewInProduction
+
+  // ---- reactivity: notify subscribers (debug panel / framework bindings) ---
+  const listeners = new Set<() => void>()
+  let snapshot: PreviewSnapshot<Key>[] | null = null
+
+  /** Invalidate the cached snapshot and fan out to every subscriber. */
+  const notify = (): void => {
+    snapshot = null
+    for (const listener of listeners) listener()
+  }
 
   // ---- guarded localStorage access (private mode / SSR can throw) ----------
   const safeGet = (k: string): string | null => {
@@ -126,18 +163,28 @@ export function createFeaturePreview<T extends FeatureMap>(
     return p !== undefined ? p : staticDefault(key)
   }
 
+  /** Persist a single override without notifying — used to batch bulk writes. */
+  const writePreview = (key: Key, visible: boolean): boolean => {
+    if (!previewAllowed) return false
+    safeSet(storageKey(key), visible ? '1' : '0')
+    return true
+  }
+
   /** Force a feature shown/hidden for THIS browser only. No-op if previews disallowed. */
   const setPreview = (key: Key, visible: boolean): void => {
-    if (!previewAllowed) return
-    safeSet(storageKey(key), visible ? '1' : '0')
+    if (writePreview(key, visible)) notify()
   }
 
   /** Drop a single preview → the feature falls back to its stage default. */
-  const clearPreview = (key: Key): void => safeRemove(storageKey(key))
+  const clearPreview = (key: Key): void => {
+    safeRemove(storageKey(key))
+    notify()
+  }
 
   /** Drop every preview override. */
   const clearAllPreviews = (): void => {
     for (const key of Object.keys(features) as Key[]) safeRemove(storageKey(key))
+    notify()
   }
 
   /**
@@ -164,15 +211,22 @@ export function createFeaturePreview<T extends FeatureMap>(
       const [name, state] = token.split(':')
       if (!(name in features)) continue // ignore unknown keys
       const key = name as Key
-      setPreview(key, state !== 'off')
-      touched.push(key)
+      if (writePreview(key, state !== 'off')) touched.push(key)
     }
+    if (touched.length > 0) notify()
     return touched
   }
 
-  /** Full snapshot for a debug panel / logging: visibility + source + metadata. */
-  const list = (): PreviewSnapshot<Key>[] =>
-    (Object.keys(features) as Key[]).map((key) => {
+  /**
+   * Full snapshot for a debug panel / logging: visibility + source + metadata.
+   *
+   * The result is memoized and only rebuilt after a mutation, so the returned
+   * array is referentially stable between changes — safe to feed straight into
+   * React's `useSyncExternalStore` without an extra cache layer.
+   */
+  const list = (): PreviewSnapshot<Key>[] => {
+    if (snapshot) return snapshot
+    snapshot = (Object.keys(features) as Key[]).map((key) => {
       const p = readPreview(key)
       return {
         key,
@@ -181,6 +235,28 @@ export function createFeaturePreview<T extends FeatureMap>(
         def: features[key],
       }
     })
+    return snapshot
+  }
+
+  /**
+   * Subscribe to preview changes (a set/clear/URL sync, or an explicit
+   * `refresh()`). Returns an unsubscribe function. Powers the debug panel and
+   * the framework bindings; the listener takes no argument — read current state
+   * back through `isPreviewable` / `list`.
+   */
+  const subscribe = (listener: () => void): (() => void) => {
+    listeners.add(listener)
+    return () => {
+      listeners.delete(listener)
+    }
+  }
+
+  /**
+   * Recompute + notify without a local mutation. Call this after localStorage
+   * changed out-of-band — e.g. a cross-tab `storage` event — so subscribers
+   * re-read the latest values.
+   */
+  const refresh = (): void => notify()
 
   return {
     stage,
@@ -190,7 +266,7 @@ export function createFeaturePreview<T extends FeatureMap>(
     clearAllPreviews,
     syncFromUrl,
     list,
+    subscribe,
+    refresh,
   }
 }
-
-export type FeaturePreview<T extends FeatureMap> = ReturnType<typeof createFeaturePreview<T>>
