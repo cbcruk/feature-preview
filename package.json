@@ -45,6 +45,8 @@
   "scripts": {
     "build": "vp pack",
     "dev": "vp pack --watch",
+    "demo": "vp dev",
+    "demo:build": "vp build",
     "test": "vp test",
     "check": "vp check",
     "prepublishOnly": "vp run build",
