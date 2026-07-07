@@ -16,10 +16,16 @@ The SDK ships three entry points — a framework-agnostic core, a React binding,
 
 An interactive demo lives in [`demo/`](demo) — a small React storefront wired to all three entry points. Flip previews from the control table, the floating debug panel, or a `?preview=` link and watch the storefront re-render live.
 
+**Live:** https://cbcruk.github.io/feature-preview/ — try `?preview=newCheckoutFlow` on the URL.
+
+Run it locally:
+
 ```bash
 vp install
 vp demo        # start the dev server, then open the printed localhost URL
 ```
+
+The live demo is published from `main` by [`.github/workflows/deploy-demo.yml`](.github/workflows/deploy-demo.yml). One-time setup: in **Settings → Pages**, set **Source** to **GitHub Actions**.
 
 ## Core
 
