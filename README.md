@@ -12,6 +12,15 @@ The SDK ships three entry points — a framework-agnostic core, a React binding,
 | `feature-preview/react` | React `Provider` + reactive hooks. `react` is an optional peer dependency. |
 | `feature-preview/panel` | Framework-agnostic floating debug panel to flip previews at runtime.       |
 
+## Demo
+
+An interactive demo lives in [`demo/`](demo) — a small React storefront wired to all three entry points. Flip previews from the control table, the floating debug panel, or a `?preview=` link and watch the storefront re-render live.
+
+```bash
+vp install
+vp demo        # start the dev server, then open the printed localhost URL
+```
+
 ## Core
 
 Define your features once (the single source of truth) and create the shared instance:
@@ -96,6 +105,7 @@ The source files carry the full design rationale, visibility resolution order, a
 - [`src/react.tsx`](src/react.tsx) — React bindings (`feature-preview/react`)
 - [`src/panel.ts`](src/panel.ts) — runtime debug panel (`feature-preview/panel`)
 - [`src/index.ts`](src/index.ts) — core entry point (`feature-preview`)
+- [`demo/`](demo) — runnable interactive demo (`vp demo`)
 - [`examples/`](examples) — copy-paste starting points (feature record + React/panel wiring)
 
 ## Development
