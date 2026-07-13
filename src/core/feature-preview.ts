@@ -38,7 +38,7 @@ export interface FeatureDef {
 
 export type FeatureMap = Record<string, FeatureDef>
 
-export interface FeaturePreviewOptions {
+export interface FeaturePreviewOptions<T extends FeatureMap = FeatureMap> {
   /**
    * Current build stage. Must resolve to a build-time literal for correct
    * per-build visibility (e.g. injected via Vite `define` / `import.meta.env`).
@@ -54,12 +54,20 @@ export interface FeaturePreviewOptions {
   allowPreviewInProduction?: boolean
   /** URL query param name consumed by `syncFromUrl()`. Default: 'preview'. */
   urlParam?: string
+  /**
+   * Force the visibility of specific features for THIS instance, regardless of
+   * stage. Deterministic and storage-free — ideal for tests, SSR, and
+   * Storybook. A localStorage/URL preview still wins over an override; an
+   * override wins over the stage default. Overridden features report
+   * `source: 'override'` in `list()`.
+   */
+  overrides?: Partial<Record<keyof T & string, boolean>>
 }
 
 export interface PreviewSnapshot<K extends string> {
   key: K
   visible: boolean
-  source: 'preview' | 'default'
+  source: 'preview' | 'override' | 'default'
   def: FeatureDef
 }
 
@@ -92,7 +100,7 @@ export interface FeaturePreview<T extends FeatureMap> {
 
 export function createFeaturePreview<T extends FeatureMap>(
   features: T,
-  options: FeaturePreviewOptions,
+  options: FeaturePreviewOptions<T>,
 ): FeaturePreview<T> {
   type Key = keyof T & string
 
@@ -102,6 +110,7 @@ export function createFeaturePreview<T extends FeatureMap>(
     allowPreviewInProduction = true,
     urlParam = 'preview',
   } = options
+  const overrides: Partial<Record<Key, boolean>> = options.overrides ?? {}
 
   const previewAllowed = stage !== 'production' || allowPreviewInProduction
 
@@ -150,6 +159,9 @@ export function createFeaturePreview<T extends FeatureMap>(
     return undefined
   }
 
+  /** Instance-level forced visibility, if configured. undefined when absent. */
+  const readOverride = (key: Key): boolean | undefined => overrides[key]
+
   /** Stage-aware baseline from the static record. */
   const staticDefault = (key: Key): boolean => {
     const def = features[key]
@@ -157,10 +169,15 @@ export function createFeaturePreview<T extends FeatureMap>(
     return def.default ?? false
   }
 
-  /** Is this feature visible to the current viewer? Preview override wins, else stage default. */
+  /**
+   * Is this feature visible to the current viewer? Resolution order:
+   * localStorage preview → instance override → stage default.
+   */
   const isPreviewable = (key: Key): boolean => {
     const p = readPreview(key)
-    return p !== undefined ? p : staticDefault(key)
+    if (p !== undefined) return p
+    const o = readOverride(key)
+    return o !== undefined ? o : staticDefault(key)
   }
 
   /** Persist a single override without notifying — used to batch bulk writes. */
@@ -228,10 +245,11 @@ export function createFeaturePreview<T extends FeatureMap>(
     if (snapshot) return snapshot
     snapshot = (Object.keys(features) as Key[]).map((key) => {
       const p = readPreview(key)
+      const o = readOverride(key)
       return {
         key,
-        visible: p !== undefined ? p : staticDefault(key),
-        source: p !== undefined ? 'preview' : 'default',
+        visible: p ?? o ?? staticDefault(key),
+        source: p !== undefined ? 'preview' : o !== undefined ? 'override' : 'default',
         def: features[key],
       }
     })

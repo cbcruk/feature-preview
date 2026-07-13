@@ -50,6 +50,18 @@ const inert: PreviewPanelHandle = {
   setCollapsed() {},
 }
 
+/** Badge colors per snapshot source (preview = amber, override = violet, default = grey). */
+const SRC_COLOR: Record<PreviewSnapshot<string>['source'], string> = {
+  preview: '#fbbf24',
+  override: '#a78bfa',
+  default: '#6b7280',
+}
+const SRC_BORDER: Record<PreviewSnapshot<string>['source'], string> = {
+  preview: '#78350f',
+  override: '#4c1d95',
+  default: '#374151',
+}
+
 /**
  * Mount the debug panel for a `createFeaturePreview` instance. Returns a handle
  * to collapse or remove it. Call once (e.g. behind a dev-only guard).
@@ -167,8 +179,8 @@ export function mountPreviewPanel<T extends FeatureMap>(
       fontSize: '10px',
       padding: '1px 6px',
       borderRadius: '9999px',
-      color: snap.source === 'preview' ? '#fbbf24' : '#6b7280',
-      border: `1px solid ${snap.source === 'preview' ? '#78350f' : '#374151'}`,
+      color: SRC_COLOR[snap.source],
+      border: `1px solid ${SRC_BORDER[snap.source]}`,
     })
     badgeEl.textContent = snap.source
 

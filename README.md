@@ -62,6 +62,17 @@ https://app.example.com/?preview=a,b:off,c                # multiple
 https://app.example.com/?preview=reset                    # clear all
 ```
 
+### Overrides (tests / SSR / Storybook)
+
+Force visibility for an instance with `overrides` — deterministic and storage-free. A localStorage/URL preview still wins over an override; an override wins over the stage default (overridden features report `source: 'override'`).
+
+```ts
+const preview = createFeaturePreview(FEATURES, {
+  stage: 'production',
+  overrides: { newCheckoutFlow: true }, // render as if it were previewed
+})
+```
+
 ## React
 
 Wrap your app once, then read previews reactively — components re-render when a preview is flipped (via a hook, the panel, a URL sync, or another tab):
