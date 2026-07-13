@@ -1,8 +1,8 @@
 import { useEffect } from 'react'
 import {
   FeaturePreviewProvider,
+  Preview,
   useFeaturePreview,
-  useIsPreviewable,
   usePreviewSnapshot,
 } from '../src/react.tsx'
 import { mountPreviewPanel } from '../src/panel.ts'
@@ -48,32 +48,43 @@ function Header() {
   )
 }
 
-/** The "app" a user sees — visibility comes straight from the reactive hooks. */
+/** The "app" a user sees — gated declaratively with the <Preview> component. */
 function Storefront() {
-  const newCheckout = useIsPreviewable('newCheckoutFlow')
-  const beta = useIsPreviewable('betaBanner')
-  const legacy = useIsPreviewable('legacyExport')
-
   return (
     <div className="card">
       <h2>Storefront</h2>
-      {beta && <div className="banner">🎉 Beta banner — you're on the preview build</div>}
+
+      {/* wrap-only: render children only when previewable */}
+      <Preview when="betaBanner">
+        <div className="banner">🎉 Beta banner — you're on the preview build</div>
+      </Preview>
+
+      {/* wrap + fallback: swap between two branches */}
       <div className="checkout">
-        {newCheckout ? (
+        <Preview
+          when="newCheckoutFlow"
+          fallback={
+            <div className="checkout-old">
+              <strong>Classic checkout</strong>
+              <p className="muted">The current production flow.</p>
+            </div>
+          }
+        >
           <div className="checkout-new">
             <strong>New checkout flow</strong>
             <p className="muted">One-page express checkout (preview).</p>
           </div>
-        ) : (
-          <div className="checkout-old">
-            <strong>Classic checkout</strong>
-            <p className="muted">The current production flow.</p>
-          </div>
-        )}
+        </Preview>
       </div>
-      <button className="ghost" disabled={!legacy}>
-        {legacy ? 'Export (legacy)' : 'Export removed'}
-      </button>
+
+      {/* render prop: get the live boolean */}
+      <Preview when="legacyExport">
+        {(on) => (
+          <button className="ghost" disabled={!on}>
+            {on ? 'Export (legacy)' : 'Export removed'}
+          </button>
+        )}
+      </Preview>
     </div>
   )
 }

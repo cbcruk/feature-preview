@@ -167,3 +167,39 @@ describe('SSR / no storage', () => {
     expect(p.syncFromUrl('?preview=off')).toEqual(['off'])
   })
 })
+
+describe('overrides', () => {
+  test('force visibility over the stage default, both directions', () => {
+    const p = createFeaturePreview(FEATURES, {
+      stage: 'dev',
+      overrides: { fromStaging: true, ga: false },
+    })
+    expect(p.isPreviewable('fromStaging')).toBe(true) // dev default would be false
+    expect(p.isPreviewable('ga')).toBe(false) // GA default would be true
+    expect(p.isPreviewable('off')).toBe(false) // untouched → stage default
+  })
+
+  test('list reports source: override', () => {
+    const p = createFeaturePreview(FEATURES, { stage: 'dev', overrides: { fromStaging: true } })
+    const byKey = Object.fromEntries(p.list().map((s) => [s.key, s]))
+    expect(byKey.fromStaging).toMatchObject({ visible: true, source: 'override' })
+    expect(byKey.off.source).toBe('default')
+  })
+
+  test('a localStorage preview still wins over an override', () => {
+    const p = createFeaturePreview(FEATURES, { stage: 'dev', overrides: { fromStaging: false } })
+    expect(p.isPreviewable('fromStaging')).toBe(false)
+    p.setPreview('fromStaging', true)
+    expect(p.isPreviewable('fromStaging')).toBe(true)
+    expect(p.list().find((s) => s.key === 'fromStaging')?.source).toBe('preview')
+  })
+
+  test('apply even under production lockout (they are not localStorage previews)', () => {
+    const p = createFeaturePreview(FEATURES, {
+      stage: 'production',
+      allowPreviewInProduction: false,
+      overrides: { off: true },
+    })
+    expect(p.isPreviewable('off')).toBe(true)
+  })
+})
