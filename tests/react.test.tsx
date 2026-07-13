@@ -2,7 +2,13 @@
 import { afterEach, describe, expect, test, vi } from 'vite-plus/test'
 import { act, cleanup, render } from '@testing-library/react'
 import { createFeaturePreview, type FeatureMap } from '../src/core/feature-preview.ts'
-import { FeaturePreviewProvider, useIsPreviewable, usePreviewSnapshot } from '../src/react.tsx'
+import {
+  FeaturePreviewProvider,
+  Preview,
+  useIsPreviewable,
+  usePreviewDetails,
+  usePreviewSnapshot,
+} from '../src/react.tsx'
 
 const FEATURES = {
   fromStaging: { minStage: 'staging' },
@@ -51,6 +57,68 @@ describe('React bindings', () => {
 
     act(() => preview.setPreview('off', true))
     expect(container.textContent).toBe('1')
+  })
+
+  test('usePreviewDetails exposes visibility, source, and metadata reactively', () => {
+    const preview = createFeaturePreview(FEATURES, { stage: 'dev' })
+    function Details() {
+      const d = usePreviewDetails('fromStaging')
+      return (
+        <span>
+          {String(d?.visible)}/{d?.source}
+        </span>
+      )
+    }
+    const { container } = render(
+      <FeaturePreviewProvider instance={preview}>
+        <Details />
+      </FeaturePreviewProvider>,
+    )
+    expect(container.textContent).toBe('false/default')
+
+    act(() => preview.setPreview('fromStaging', true))
+    expect(container.textContent).toBe('true/preview')
+  })
+
+  test('usePreviewDetails is undefined for an unknown key', () => {
+    const preview = createFeaturePreview(FEATURES, { stage: 'dev' })
+    function Details() {
+      return <span>{usePreviewDetails('nope') === undefined ? 'none' : 'found'}</span>
+    }
+    const { container } = render(
+      <FeaturePreviewProvider instance={preview}>
+        <Details />
+      </FeaturePreviewProvider>,
+    )
+    expect(container.textContent).toBe('none')
+  })
+
+  test('<Preview> renders children vs fallback and tracks changes', () => {
+    const preview = createFeaturePreview(FEATURES, { stage: 'dev' })
+    const { container } = render(
+      <FeaturePreviewProvider instance={preview}>
+        <Preview when="fromStaging" fallback={<span>old</span>}>
+          <span>new</span>
+        </Preview>
+      </FeaturePreviewProvider>,
+    )
+    expect(container.textContent).toBe('old')
+
+    act(() => preview.setPreview('fromStaging', true))
+    expect(container.textContent).toBe('new')
+  })
+
+  test('<Preview> supports a render prop receiving the live boolean', () => {
+    const preview = createFeaturePreview(FEATURES, { stage: 'dev' })
+    const { container } = render(
+      <FeaturePreviewProvider instance={preview}>
+        <Preview when="off">{(on) => <span>{on ? 'ON' : 'OFF'}</span>}</Preview>
+      </FeaturePreviewProvider>,
+    )
+    expect(container.textContent).toBe('OFF')
+
+    act(() => preview.setPreview('off', true))
+    expect(container.textContent).toBe('ON')
   })
 
   test('hooks throw outside a provider', () => {

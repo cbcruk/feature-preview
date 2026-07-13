@@ -84,8 +84,21 @@ function Checkout() {
 ```
 
 - `useIsPreviewable(key)` — reactive boolean for one feature.
+- `usePreviewDetails(key)` — reactive `{ visible, source, def }` for one feature (`source` tells you _why_: a preview override vs. the stage default).
 - `usePreviewSnapshot()` — reactive list of every feature (visibility, source, metadata).
 - `useFeaturePreview<typeof FEATURES>()` — the instance, with key-level type-safety.
+
+Or gate declaratively with the `<Preview>` component:
+
+```tsx
+import { Preview } from 'feature-preview/react'
+;<Preview when="newCheckoutFlow" fallback={<OldCheckout />}>
+  <NewCheckout />
+</Preview>
+
+// render-prop form gives you the live boolean:
+;<Preview when="betaBanner">{(on) => <Banner active={on} />}</Preview>
+```
 
 ## Debug panel
 

@@ -87,3 +87,44 @@ export function usePreviewSnapshot(): PreviewSnapshot<string>[] {
   const read = () => instance.list()
   return useSyncExternalStore((cb) => instance.subscribe(cb), read, read)
 }
+
+/**
+ * Reactive detail for ONE feature — `{ key, visible, source, def }`. Like the
+ * "details" hooks in flag SDKs: `source` tells you WHY it's visible (a preview
+ * override vs. the stage default) and `def` carries the metadata. `undefined`
+ * for an unknown key. Each `list()` entry is referentially stable between
+ * changes, so this is safe for `useSyncExternalStore`.
+ */
+export function usePreviewDetails(key: string): PreviewSnapshot<string> | undefined {
+  const instance = useFeaturePreview()
+  const read = () => instance.list().find((s) => s.key === key)
+  return useSyncExternalStore((cb) => instance.subscribe(cb), read, read)
+}
+
+export interface PreviewProps {
+  /** Feature key to gate on. */
+  when: string
+  /**
+   * Rendered when the feature is previewable. May be a render prop receiving
+   * the live `visible` boolean, so you can render both branches yourself.
+   */
+  children?: ReactNode | ((visible: boolean) => ReactNode)
+  /** Rendered when the feature is NOT previewable (ignored for a render prop). */
+  fallback?: ReactNode
+}
+
+/**
+ * Declarative gating — show `children` only when a feature is previewable,
+ * otherwise `fallback`. A component alternative to `useIsPreviewable`:
+ *
+ *   <Preview when="newCheckoutFlow" fallback={<OldCheckout />}>
+ *     <NewCheckout />
+ *   </Preview>
+ *
+ *   <Preview when="betaBanner">{(on) => <Banner active={on} />}</Preview>
+ */
+export function Preview({ when, children, fallback = null }: PreviewProps): ReactNode {
+  const visible = useIsPreviewable(when)
+  if (typeof children === 'function') return children(visible)
+  return visible ? children : fallback
+}
